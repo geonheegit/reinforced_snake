@@ -101,7 +101,7 @@ public class agent_movement : MonoBehaviour
             }
             reward_list.Add(reward);
             
-            if (reward_list[reward_list.Count - 1] >= reward_list[reward_list.Count - 2])
+            if (reward_list[reward_list.Count - 1] >= best_reward)
             {
                 best_reward = reward_list[reward_list.Count - 1]; // if current reward >= previous reward, then best reward = current reward.
             }
@@ -120,6 +120,7 @@ public class agent_movement : MonoBehaviour
             // Initialization
             gameObject.transform.position = new Vector2(-10, -4);
             generation = 0;
+            best_reward = 0;
             reward = 0;
             reward_list.Clear();
 
