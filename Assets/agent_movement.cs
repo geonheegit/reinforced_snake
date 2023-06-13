@@ -105,10 +105,6 @@ public class agent_movement : MonoBehaviour
             {
                 best_reward = reward_list[reward_list.Count - 1]; // if current reward >= previous reward, then best reward = current reward.
             }
-            else
-            {
-                best_reward = reward_list[reward_list.Count - 2];
-            }
             Debug.Log($"=== CYCLE COMPLETED || {generation}th generation || current gen reward: {reward_list[reward_list.Count - 1]} || previous gen reward: {reward_list[reward_list.Count - 2]} || best gen reward: {best_reward} ===");
         }
     }
