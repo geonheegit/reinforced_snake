@@ -406,12 +406,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   goal: {fileID: 612876192}
-  current_reward: 0
-  previous_reward: 0
-  current_distance: 0
-  previous_distance: 0
+  reward: 0
+  distance: 0
   trial: 0
-  random_action: 0
+  goal_generation: 4
+  generation: 0
 --- !u!212 &1142328892
 SpriteRenderer:
   m_ObjectHideFlags: 0
