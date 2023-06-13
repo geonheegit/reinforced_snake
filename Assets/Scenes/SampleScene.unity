@@ -3059,6 +3059,9 @@ MonoBehaviour:
   goal_generation: 5
   generation: 0
   best_reward: 0
+  plus_reward: 0
+  minus_reward: 0
+  trials: 200
   each_step: 0
   each_cycle: 1
   ActionListInput: {fileID: 151190969}

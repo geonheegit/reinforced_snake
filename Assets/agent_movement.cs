@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Linq;
 
 public class agent_movement : MonoBehaviour
 {
@@ -15,8 +16,18 @@ public class agent_movement : MonoBehaviour
     public int generation;
     public int best_reward;
 
+    private bool is_FirstTry; // 1st generation.
+    private int real_random_action; // 1st generation random action.
+    private int adjusted_random_action; // after the 1st generation.
+    private int current_action;
+
+    // USER INPUT
+    public int plus_reward;
+    public int minus_reward;
+
     public bool each_step;
     public bool each_cycle;
+    // USER INPUT
 
     List<int> action_list = new List<int>();
     List<int> best_action_list = new List<int>();
@@ -41,7 +52,11 @@ public class agent_movement : MonoBehaviour
         {
             if (distance_list[list_count - 1] > distance_list[list_count - 2]) // if(current distance > previous distance)
             {
-                reward += 5;
+                reward += plus_reward;
+            }
+            else
+            {
+                reward += minus_reward;
             }
         }
     }
@@ -63,61 +78,182 @@ public class agent_movement : MonoBehaviour
             distance_list.Clear(); // clear distance list after one generation.
             distance_list.Add((goal.transform.position - gameObject.transform.position).magnitude); // for non-negative index of list.
 
-            while (trial < 200)
+            if (is_FirstTry) // when first try
             {
-                if (gameObject.transform.position != goal.transform.position)
-                {
-                    trial += 1;
-                    reward -= 1;
-                    int random_action = Random.Range(1, 5); // 1 ~ 4 pick // 1:L, 2:U, 3:R, 4:D
-                    action_list.Add(random_action);
-                    yield return new WaitForSeconds(0f);
+                real_random_action = Random.Range(1, 5); // 1 ~ 4 pick // 1:L, 2:U, 3:R, 4:D
+                action_list.Add(real_random_action);
+                current_action = real_random_action;
 
-                    if (random_action == 1 && gameObject.transform.position.x != -10) // L
-                    {
-                        Vector3 left_vec = new Vector3(-1, 0, 0);
-                        gameObject.transform.position += left_vec;
-                        random_action = 0;
-                    }
-                    else if (random_action == 2 && gameObject.transform.position.y != 4) // U
-                    {
-                        Vector3 up_vec = new Vector3(0, 1, 0);
-                        gameObject.transform.position += up_vec;
-                        random_action = 0;
-                    }
-                    else if (random_action == 3 && gameObject.transform.position.x != 10) // R
-                    {
-                        Vector3 right_vec = new Vector3(1, 0, 0);
-                        gameObject.transform.position += right_vec;
-                        random_action = 0;
-                    }
-                    else if (random_action == 4 && gameObject.transform.position.y != -4) // D
-                    {
-                        Vector3 down_vec = new Vector3(0, -1, 0);
-                        gameObject.transform.position += down_vec;
-                        random_action = 0;
-                        
-                    }
-                    Reward_Distance();
-                    
-                    if (each_step)
-                    {
-                        Debug.Log($"{generation}th generation || trial = {trial} || " +
-                            $"action: {action_list[action_list.Count - 1]} || " +
-                            $"current distance: {distance_list[distance_list.Count - 1]} || " +
-                            $"previous distance: {distance_list[distance_list.Count - 2]} || " +
-                            $"current gen reward: {reward_list[reward_list.Count - 1]} || " +
-                            $"previous gen reward: {reward_list[reward_list.Count - 2]} || " +
-                            $"current reward: {reward} || index: {distance_list.Count}");
-                    }
-                }
-                else
+                is_FirstTry = false;
+
+                while (trial < 200)
                 {
-                    Debug.Log($"ARRIVED || {generation}th, total trial: {trial}");
-                    break;
+                    if (gameObject.transform.position != goal.transform.position)
+                    {
+                        trial += 1;
+                        reward -= 1;
+                        //
+
+
+                        if (current_action == 1 && gameObject.transform.position.x != -10) // L
+                        {
+                            Vector3 left_vec = new Vector3(-1, 0, 0);
+                            gameObject.transform.position += left_vec;
+                            current_action = 0;
+                        }
+                        else if (current_action == 2 && gameObject.transform.position.y != 4) // U
+                        {
+                            Vector3 up_vec = new Vector3(0, 1, 0);
+                            gameObject.transform.position += up_vec;
+                            current_action = 0;
+                        }
+                        else if (current_action == 3 && gameObject.transform.position.x != 10) // R
+                        {
+                            Vector3 right_vec = new Vector3(1, 0, 0);
+                            gameObject.transform.position += right_vec;
+                            current_action = 0;
+                        }
+                        else if (current_action == 4 && gameObject.transform.position.y != -4) // D
+                        {
+                            Vector3 down_vec = new Vector3(0, -1, 0);
+                            gameObject.transform.position += down_vec;
+                            current_action = 0;
+
+                        }
+                        Reward_Distance();
+                        yield return new WaitForSeconds(0f);
+
+                        if (each_step)
+                        {
+                            Debug.Log($"{generation}th generation || trial = {trial} || " +
+                                $"action: {action_list[action_list.Count - 1]} || " +
+                                $"current distance: {distance_list[distance_list.Count - 1]} || " +
+                                $"previous distance: {distance_list[distance_list.Count - 2]} || " +
+                                $"current gen reward: {reward_list[reward_list.Count - 1]} || " +
+                                $"previous gen reward: {reward_list[reward_list.Count - 2]} || " +
+                                $"current reward: {reward} || index: {distance_list.Count}");
+                        }
+                    }
+                    else
+                    {
+                        Debug.Log($"ARRIVED || {generation}th, total trial: {trial}");
+                        break;
+                    }
+
                 }
-                
             }
+            else // Reinforcement Learning Reward Algorithm.txt || not first try.
+            {
+                List<int> count_list = new List<int>();
+                List<int> sorted_count_list = new List<int>();
+                List<int> prob_list = new List<int>();
+                List<int> direction_list = new List<int>() { 1, 2, 3, 4 }; // L, U, R, D
+                List<int> sortedDirections = new List<int>();
+
+
+                // Count the number of L, U, R, D (in order) from the best_action_list.
+                for (int i = 1; i < 5; i++)
+                {
+                    int count = best_action_list.Where(x => x.Equals(i)).Count();
+                    count_list.Add(count);
+                }
+                int list_length = best_action_list.Count;
+                sorted_count_list = count_list;
+                sorted_count_list.Sort();
+
+                // Sort L, U, R, D in order of number of each direction count and store tham into 'sortedDirections'(List).
+                for (int i = 0; i < count_list.Count; i++)
+                {
+                    int index = sorted_count_list.IndexOf(count_list[i]);
+                    sortedDirections.Insert(index, direction_list[i]);
+                }
+
+                // Calculate Next L, U, R, D probability (in order) into percentage.
+                for (int i = 0; i < 4; i++)
+                {
+                    int prob_perc = Mathf.RoundToInt((count_list[i] / list_length) * 100);
+                    prob_list.Add(prob_perc);
+                }
+
+                prob_list.Sort(); // Sort prob_list in order to calculate adjusted action below.
+
+                // return adjusted action depends on the probability.
+                int k = Random.Range(0, 100); // pick random number (0 ~ 99)
+
+                if (0 <= k && k < prob_list[0]) // Lowest probability (First index of prob_list)
+                {
+                    current_action = sortedDirections[0];
+                }
+                else if (prob_list[0] <= k && k < prob_list[0] + prob_list[1])
+                {
+                    current_action = sortedDirections[1];
+                }
+                else if (prob_list[0] + prob_list[1] <= k && k < prob_list[0] + prob_list[1] + prob_list[2])
+                {
+                    current_action = sortedDirections[2];
+                }
+                else if (prob_list[0] + prob_list[1] + prob_list[2] <= k && k <= prob_list[0] + prob_list[1] + prob_list[2] + prob_list[3] + 1) // Highest probability (Last index of prob_list)
+                {
+                    current_action = sortedDirections[3];
+                }
+
+                while (trial < 200)
+                {
+                    if (gameObject.transform.position != goal.transform.position)
+                    {
+                        trial += 1;
+                        reward -= 1;
+                        //
+
+
+                        if (current_action == 1 && gameObject.transform.position.x != -10) // L
+                        {
+                            Vector3 left_vec = new Vector3(-1, 0, 0);
+                            gameObject.transform.position += left_vec;
+                            current_action = 0;
+                        }
+                        else if (current_action == 2 && gameObject.transform.position.y != 4) // U
+                        {
+                            Vector3 up_vec = new Vector3(0, 1, 0);
+                            gameObject.transform.position += up_vec;
+                            current_action = 0;
+                        }
+                        else if (current_action == 3 && gameObject.transform.position.x != 10) // R
+                        {
+                            Vector3 right_vec = new Vector3(1, 0, 0);
+                            gameObject.transform.position += right_vec;
+                            current_action = 0;
+                        }
+                        else if (current_action == 4 && gameObject.transform.position.y != -4) // D
+                        {
+                            Vector3 down_vec = new Vector3(0, -1, 0);
+                            gameObject.transform.position += down_vec;
+                            current_action = 0;
+
+                        }
+                        Reward_Distance();
+                        yield return new WaitForSeconds(0f);
+
+                        if (each_step)
+                        {
+                            Debug.Log($"{generation}th generation || trial = {trial} || " +
+                                $"action: {action_list[action_list.Count - 1]} || " +
+                                $"current distance: {distance_list[distance_list.Count - 1]} || " +
+                                $"previous distance: {distance_list[distance_list.Count - 2]} || " +
+                                $"current gen reward: {reward_list[reward_list.Count - 1]} || " +
+                                $"previous gen reward: {reward_list[reward_list.Count - 2]} || " +
+                                $"current reward: {reward} || index: {distance_list.Count}");
+                        }
+                    }
+                    else
+                    {
+                        Debug.Log($"ARRIVED || {generation}th, total trial: {trial}");
+                        break;
+                    }
+
+                }
+            }
+            
             reward_list.Add(reward);
             
             if (reward_list[reward_list.Count - 1] >= best_reward)
@@ -198,6 +334,7 @@ public class agent_movement : MonoBehaviour
             generation = 0;
             best_reward = 0;
             reward = 0;
+            is_FirstTry = true;
             reward_list.Clear();
 
             // Start
