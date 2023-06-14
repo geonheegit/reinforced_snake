@@ -3059,12 +3059,12 @@ MonoBehaviour:
   goal_generation: 20
   generation: 0
   best_reward: 0
-  plus_reward: 5
-  minus_reward: -3
+  plus_reward: 4
+  minus_reward: -1
   trials: 100
   base_generation: 10
-  each_step: 1
-  each_cycle: 0
+  each_step: 0
+  each_cycle: 1
   ActionListInput: {fileID: 151190969}
 --- !u!212 &1142328892
 SpriteRenderer:

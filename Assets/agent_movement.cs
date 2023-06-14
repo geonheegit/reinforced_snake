@@ -139,7 +139,7 @@ public class agent_movement : MonoBehaviour
 
                 }
             }
-            else // Reinforcement Learning Reward Algorithm.txt || not first try.
+            else // Reinforcement Learning Reward Algorithm.txt || not base_gen try.
             {
                 List<int> count_list = new List<int>();
                 List<int> sorted_count_list = new List<int>();
@@ -182,21 +182,26 @@ public class agent_movement : MonoBehaviour
                 {
                     // return adjusted action depends on the probability.
                     int k = Random.Range(0, 100); // pick random number (0 ~ 99)
+                    // problem on prob_list => check with debug.
 
                     if (0 <= k && k < prob_list[0]) // Lowest probability (First index of prob_list)
                     {
+                        Debug.Log("L");
                         current_action = sortedDirections[0];
                     }
                     else if (prob_list[0] <= k && k < prob_list[0] + prob_list[1])
                     {
+                        Debug.Log("U");
                         current_action = sortedDirections[1];
                     }
                     else if (prob_list[0] + prob_list[1] <= k && k < prob_list[0] + prob_list[1] + prob_list[2])
                     {
+                        Debug.Log("R");
                         current_action = sortedDirections[2];
                     }
                     else if (prob_list[0] + prob_list[1] + prob_list[2] <= k && k <= prob_list[0] + prob_list[1] + prob_list[2] + prob_list[3] + 1) // Highest probability (Last index of prob_list)
                     {
+                        Debug.Log("D");
                         current_action = sortedDirections[3];
                     }
 
@@ -268,7 +273,6 @@ public class agent_movement : MonoBehaviour
                     $"previous gen reward: {reward_list[reward_list.Count - 2]} || " +
                     $"best gen reward: {best_reward} ===");
 
-                Debug.Log(string.Join(",", best_action_list));
 
                 List<int> count_list = new List<int>();
                 for (int i = 1; i < 5; i++)
@@ -276,7 +280,6 @@ public class agent_movement : MonoBehaviour
                     int count = best_action_list.Where(x => x.Equals(i)).Count();
                     count_list.Add(count);
                 }
-                Debug.Log(string.Join(",", count_list));
             }
         }
     }
