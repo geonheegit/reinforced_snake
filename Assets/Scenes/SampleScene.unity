@@ -3056,13 +3056,14 @@ MonoBehaviour:
   reward: 0
   distance: 0
   trial: 0
-  goal_generation: 20
+  goal_generation: 30
   generation: 0
   best_reward: 0
+  lowest_trial: 0
   plus_reward: 4
   minus_reward: -1
   trials: 100
-  base_generation: 10
+  base_generation: 15
   each_step: 0
   each_cycle: 1
   ActionListInput: {fileID: 151190969}

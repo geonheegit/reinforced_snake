@@ -15,6 +15,7 @@ public class agent_movement : MonoBehaviour
     public int goal_generation; // number of generations of training.
     public int generation;
     public int best_reward;
+    public int lowest_trial;
 
     private int real_random_action; // 1st generation random action.
     private int adjusted_random_action; // after the 1st generation.
@@ -32,6 +33,7 @@ public class agent_movement : MonoBehaviour
 
     List<int> action_list = new List<int>();
     List<int> best_action_list = new List<int>();
+    List<int> bbbest_action_list = new List<int>();
     List<float> distance_list = new List<float>();
     List<int> reward_list = new List<int>();
 
@@ -51,13 +53,13 @@ public class agent_movement : MonoBehaviour
         int list_count = distance_list.Count;
         if (list_count >= 2)
         {
-            if (distance_list[list_count - 1] > distance_list[list_count - 2]) // if(current distance > previous distance)
+            if (distance_list[list_count - 1] >= distance_list[list_count - 2]) // if(current distance > previous distance)
             {
-                reward += plus_reward;
+                reward += minus_reward;
             }
             else
             {
-                reward += minus_reward;
+                reward += plus_reward;
             }
         }
     }
@@ -134,16 +136,54 @@ public class agent_movement : MonoBehaviour
                     else
                     {
                         Debug.Log($"ARRIVED || {generation}th, total trial: {trial}");
+                        // edited
+                        if (trial < lowest_trial)
+                        {
+                            bbbest_action_list.Clear();
+                            for (int i = 0; i < action_list.Count; i++)
+                            {
+                                bbbest_action_list.Add(action_list[i]);
+                            }
+                        }
                         break;
                     }
 
                 }
+                // reward update here.
+                reward_list.Add(reward);
+
+                int list_count = distance_list.Count;
+                if (list_count >= 2)
+                {
+                    if (distance_list[list_count - 1] >= distance_list[list_count - 2]) // if(current distance > previous distance)
+                    {
+                        reward += minus_reward;
+                    }
+                    else
+                    {
+                        reward += plus_reward;
+                    }
+                }
+
+                if (reward_list[reward_list.Count - 1] > best_reward)
+                {
+                    Debug.Log("best rewarded");
+                    best_reward = reward_list[reward_list.Count - 1]; // if current reward >= previous reward, then best reward = current reward.
+                    best_action_list.Clear();
+                    for (int i = 0; i < action_list.Count; i++)
+                    {
+                        best_action_list.Add(action_list[i]);
+                    }
+                }
+
             }
+
             else // Reinforcement Learning Reward Algorithm.txt || not base_gen try.
             {
+                
                 List<int> count_list = new List<int>();
                 List<int> sorted_count_list = new List<int>();
-                List<int> prob_list = new List<int>();
+                List<float> prob_list = new List<float>();
                 List<int> direction_list = new List<int>() { 1, 2, 3, 4 }; // L, U, R, D
                 List<int> sortedDirections = new List<int>() { 0, 0, 0, 0 };
 
@@ -152,6 +192,7 @@ public class agent_movement : MonoBehaviour
                 for (int i = 1; i < 5; i++)
                 {
                     int count = best_action_list.Where(x => x.Equals(i)).Count();
+                    // Debug.Log(count);
                     count_list.Add(count);
                 }
 
@@ -166,13 +207,14 @@ public class agent_movement : MonoBehaviour
                 for (int i = 0; i < count_list.Count; i++)
                 {
                     int index = sorted_count_list.IndexOf(count_list[i]);
+                    // Debug.Log(index);
                     sortedDirections[index] = direction_list[i];
                 }
 
                 // Calculate Next L, U, R, D probability (in order) into percentage.
                 for (int i = 0; i < 4; i++)
                 {
-                    int prob_perc = Mathf.RoundToInt((count_list[i] / trials) * 100);
+                    float prob_perc = ((float)count_list[i] / (float)trials) * 100;
                     prob_list.Add(prob_perc);
                 }
 
@@ -180,28 +222,25 @@ public class agent_movement : MonoBehaviour
 
                 while (trial < trials)
                 {
+                    yield return new WaitForSeconds(0.01f);
                     // return adjusted action depends on the probability.
                     int k = Random.Range(0, 100); // pick random number (0 ~ 99)
                     // problem on prob_list => check with debug.
 
                     if (0 <= k && k < prob_list[0]) // Lowest probability (First index of prob_list)
                     {
-                        Debug.Log("L");
                         current_action = sortedDirections[0];
                     }
                     else if (prob_list[0] <= k && k < prob_list[0] + prob_list[1])
                     {
-                        Debug.Log("U");
                         current_action = sortedDirections[1];
                     }
                     else if (prob_list[0] + prob_list[1] <= k && k < prob_list[0] + prob_list[1] + prob_list[2])
                     {
-                        Debug.Log("R");
                         current_action = sortedDirections[2];
                     }
                     else if (prob_list[0] + prob_list[1] + prob_list[2] <= k && k <= prob_list[0] + prob_list[1] + prob_list[2] + prob_list[3] + 1) // Highest probability (Last index of prob_list)
                     {
-                        Debug.Log("D");
                         current_action = sortedDirections[3];
                     }
 
@@ -236,7 +275,7 @@ public class agent_movement : MonoBehaviour
 
                         }
                         Reward_Distance();
-                        yield return new WaitForSeconds(0f);
+                        
 
                         if (each_step)
                         {
@@ -247,23 +286,34 @@ public class agent_movement : MonoBehaviour
                     else
                     {
                         Debug.Log($"ARRIVED || {generation}th, total trial: {trial}");
+                        // edited
+                        if (trial < lowest_trial)
+                        {
+                            lowest_trial = trial;
+
+                            bbbest_action_list.Clear();
+                            for (int i = 0; i < action_list.Count; i++)
+                            {
+                                bbbest_action_list.Add(action_list[i]);
+                            }
+                        }
                         break;
                     }
-
                 }
-            }
-            reward_list.Add(reward);
-            
-            if ((reward_list[reward_list.Count - 1] >= best_reward))
-            {
-                best_reward = reward_list[reward_list.Count - 1]; // if current reward >= previous reward, then best reward = current reward.
-                best_action_list.Clear();
-                for (int i = 0; i < action_list.Count; i++)
+                // reward update here.
+                reward_list.Add(reward);
+
+                if (reward_list[reward_list.Count - 1] > best_reward)
                 {
-                    best_action_list.Add(action_list[i]);
+                    Debug.Log("best rewarded");
+                    best_reward = reward_list[reward_list.Count - 1]; // if current reward >= previous reward, then best reward = current reward.
+                    best_action_list.Clear();
+                    for (int i = 0; i < action_list.Count; i++)
+                    {
+                        best_action_list.Add(action_list[i]);
+                    }
                 }
             }
-
             // print cycle progress
             if (each_cycle)
             {
@@ -281,7 +331,9 @@ public class agent_movement : MonoBehaviour
                     count_list.Add(count);
                 }
             }
+
         }
+        
     }
     public void TakeInputAndPlay() // take string text from input field and convert the text into int list. Play action after the process.
     {
@@ -346,6 +398,7 @@ public class agent_movement : MonoBehaviour
             generation = 0;
             best_reward = -100000;
             reward = 0;
+            lowest_trial = trials;
             reward_list.Clear();
 
             // Start
@@ -355,7 +408,14 @@ public class agent_movement : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.L))
         {
             Debug.Log("=== Best Action List ===");
-            Debug.Log(string.Join(",", best_action_list));
+            if (bbbest_action_list.Count != 0)
+            {
+                Debug.Log(string.Join(",", bbbest_action_list));
+            }
+            else
+            {
+                Debug.Log(string.Join(",", best_action_list));
+            }
         }
     }
 }
